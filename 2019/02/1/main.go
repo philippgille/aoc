@@ -33,31 +33,33 @@ func fixInput(in []int) []int {
 }
 
 func compute(in []int) int {
-	pos := 0
-	for {
-		// Check for index out of range
-		if pos > len(in)-1 {
-			return in[0]
+	var op, x, y int
+	for pos, val := range in {
+		switch pos % 4 {
+		case 0:
+			// val is an opcode
+			op = val
+			if op == 99 {
+				return in[0]
+			}
+		case 1:
+			// val points to x
+			x = in[val]
+		case 2:
+			// val points to y
+			y = in[val]
+		case 3:
+			// val points to the target
+			// Store the computed value, depending on the opcode
+			switch op {
+			case 1:
+				in[val] = x + y
+			case 2:
+				in[val] = x * y
+			default:
+				panic("unknown opcode")
+			}
 		}
-		// Re-read op
-		op := in[pos]
-		// Check for exit
-		if op == 99 {
-			return in[0]
-		}
-		// Compute
-		x := in[in[pos+1]]
-		y := in[in[pos+2]]
-		res := 0
-		if op == 1 {
-			res = x + y
-		} else if op == 2 {
-			res = x * y
-		} else {
-			panic("bad op")
-		}
-		in[in[pos+3]] = res
-		// Advance pos
-		pos = pos + 4
 	}
+	return in[0]
 }
