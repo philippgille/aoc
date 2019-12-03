@@ -28,11 +28,14 @@ func calcSmallDistFromWireInputs(wire1input, wire2input string) int {
 	in1 := convertInput(wire1input)
 	in2 := convertInput(wire2input)
 
-	grid := makeGrid(in1, in2)
+	// TODO: This was determined via trial & error (error being "index out of range").
+	// It should better be created dynamically, but that led to "out of memory" when using slices.
+	// There probably is a completely different, better way to do this.
+	var grid [25000][20000]uint8
 
 	// Note: When passing slices as arguments, their underlying arrays aren't copied.
-	_ = drawLine(in1, grid, 1)
-	crossings := drawLine(in2, grid, 2)
+	_ = drawLine(in1, &grid, 1)
+	crossings := drawLine(in2, &grid, 2)
 
 	start := point{x: len(grid) / 2, y: len(grid[0]) / 2}
 	return calcSmallDist(start, crossings)
@@ -55,49 +58,7 @@ func convertInput(in string) []wirePart {
 	return result
 }
 
-// makeGrid creates a grid with 2*x as the maximum R+L and 2*y as the maximum U+D.
-// This way we can start at point x,y and be sure not to go out of range in any direction.
-func makeGrid(in1, in2 []wirePart) [][]int {
-	x1, y1 := getMovements(in1)
-	x2, y2 := getMovements(in2)
-
-	var x, y int
-	if x1 > x2 {
-		x = x1
-	} else {
-		x = x2
-	}
-	if y1 > y2 {
-		y = y1
-	} else {
-		y = y2
-	}
-
-	// TODO: out of memory when going the safe route of creating [2*x][2*y] slices :( .
-	// TODO: [2*x][2*y] works (and is required) for the test data, while [x/2][y/2] is enough for the main input.
-	// result := make([][]int, 2*x)
-	result := make([][]int, x/2)
-	// for i := 0; i < 2*x; i++ {
-	for i := 0; i < x/2; i++ {
-		// result[i] = make([]int, 2*y)
-		result[i] = make([]int, y/2)
-	}
-
-	return result
-}
-
-func getMovements(in []wirePart) (x, y int) {
-	for _, wp := range in {
-		if wp.dir == "L" || wp.dir == "R" {
-			x += wp.len
-		} else {
-			y += wp.len
-		}
-	}
-	return
-}
-
-func drawLine(in []wirePart, grid [][]int, id int) []point {
+func drawLine(in []wirePart, grid *[25000][20000]uint8, id int) []point {
 	result := make([]point, 0) // Start with len 0 to easily append
 
 	x := len(grid) / 2
@@ -120,10 +81,10 @@ func drawLine(in []wirePart, grid [][]int, id int) []point {
 			val := grid[x][y]
 			// 0 is "no line".
 			// So if there is a line and it's not the current one, it's a crossing.
-			if val != 0 && val != id {
+			if val != 0 && val != uint8(id) {
 				result = append(result, point{x: x, y: y})
 			}
-			grid[x][y] = id
+			grid[x][y] = uint8(id)
 		}
 	}
 
