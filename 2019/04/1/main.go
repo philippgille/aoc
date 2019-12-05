@@ -4,17 +4,8 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
+	"github.com/gosuri/uiprogress"
 )
-
-type wirePart struct {
-	dir string
-	len int
-}
-
-type point struct {
-	x, y  int
-	steps int
-}
 
 func main() {
 	// 6 digits, any number, would be 10^6 = 1,000,000 possibilities.
@@ -29,31 +20,39 @@ func main() {
 	elems := inMax - inMin
 	elemsPerCPU := elems / cpus
 	resChan := make(chan int, cpus)
+	var remMin int
+	uiprogress.Start() 
+
 	for i := 0; i < cpus; i++ {
 		cpuMin := inMin + (i * elemsPerCPU)
 		cpuMax := cpuMin + elemsPerCPU
-		go possibilities(cpuMin, cpuMax, resChan)
+		remMin = cpuMax
+		bar := uiprogress.AddBar(100).PrependElapsed().AppendCompleted()
+		go possibilities(cpuMin, cpuMax, resChan, bar)
 	}
 	result := 0
 	for i := 0; i < cpus; i++ {
 		result += <-resChan
 	}
 	// Remainders
-	remMin := inMin + (cpus-1)*elemsPerCPU + elemsPerCPU
 	remMax := inMax
 	if remMax-remMin > 0 {
-		result += possibilities(remMin, remMax, nil)
+		result += possibilities(remMin, remMax, nil, nil)
 	}
 	fmt.Println(result)
 }
 
-func possibilities(min, max int, resChan chan int) int {
+func possibilities(min, max int, resChan chan int, bar *uiprogress.Bar) int {
 	result := 0
+	progress := 0
 	for i := min; i <= max; i++ {
-		fmt.Println("Checking ", i)
 		s := strconv.Itoa(i)
 		if rule3(s) && rule4(s) {
 			result++
+		}
+		if bar != nil && i / 100 > progress{
+			bar.Incr()
+			progress = i/100
 		}
 	}
 	if resChan != nil {
