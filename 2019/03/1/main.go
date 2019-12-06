@@ -31,11 +31,11 @@ func calcSmallDistFromWireInputs(wire1input, wire2input string) int {
 	// TODO: This was determined via trial & error (error being "index out of range").
 	// It should better be created dynamically, but that led to "out of memory" when using slices.
 	// There probably is a completely different, better way to do this.
-	var grid [25000][20000]uint8
+	var grid [25000][20000]bool
 
 	// Note: When passing slices as arguments, their underlying arrays aren't copied.
-	_ = drawLine(in1, &grid, 1)
-	crossings := drawLine(in2, &grid, 2)
+	_ = drawLine(in1, &grid, true)
+	crossings := drawLine(in2, &grid, false)
 
 	start := point{x: len(grid) / 2, y: len(grid[0]) / 2}
 	return calcSmallDist(start, crossings)
@@ -58,7 +58,7 @@ func convertInput(in string) []wirePart {
 	return result
 }
 
-func drawLine(in []wirePart, grid *[25000][20000]uint8, id int) []point {
+func drawLine(in []wirePart, grid *[25000][20000]bool, draw bool) []point {
 	result := make([]point, 0) // Start with len 0 to easily append
 
 	x := len(grid) / 2
@@ -77,14 +77,13 @@ func drawLine(in []wirePart, grid *[25000][20000]uint8, id int) []point {
 			case "D":
 				y--
 			}
-			// Draw
-			val := grid[x][y]
-			// 0 is "no line".
-			// So if there is a line and it's not the current one, it's a crossing.
-			if val != 0 && val != uint8(id) {
+			// Draw the first line, or check with second line?
+			if draw {
+				grid[x][y] = true
+			} else if grid[x][y] {
+				// Found existing line -> found crossing
 				result = append(result, point{x: x, y: y})
 			}
-			grid[x][y] = uint8(id)
 		}
 	}
 
